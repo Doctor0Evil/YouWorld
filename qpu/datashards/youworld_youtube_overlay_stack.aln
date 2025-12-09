@@ -1,0 +1,34 @@
+# /qpu/datashards/youworld_youtube_overlay_stack.aln
+path,object_type,key,value
+/core/schema,ALN_Object,version,"1.0.0"
+core/schema,ALN_DiscoveryNode,fields,"id_hash,source_type,source_hash,topic_vec256,format_type,recency_idx,engagement_fp,trust_level,policy_tags"
+core/schema,ALN_OverlaySpec,fields,"overlay_id,video_ref,app_slug,version,timeline_events_json,state_model_ref,permissions,safety_profile"
+core/schema,ALN_PlaylistProfile,fields,"profile_id,mode,min_confidence,max_items,weights_ref,policy_profile"
+
+/overlays/apps,ALN_MiniApp,trivia_v1,"runtime=wasm;ui_layer=html5;permissions=session_token,engagement_events"
+overlays/apps,ALN_MiniApp,poll_v1,"runtime=wasm;ui_layer=html5;permissions=session_token,engagement_events"
+overlays/apps,ALN_MiniApp,branching_story_v1,"runtime=wasm;ui_layer=html5;permissions=session_token,engagement_events"
+
+/overlays/safety,ALN_SafetyProfile,standard_entertainment,"allow_gambling=false;allow_realistic_violence=false;min_age=13;region_ruleset=youtube_2025_q4"
+overlays/safety,ALN_SafetyProfile,adult_only,"allow_gambling_like=false;allow_realistic_violence_limited=true;min_age=18;region_ruleset=youtube_2025_q4"
+
+/playlists/profiles,ALN_PlaylistProfile,tech_chill_45,"mode=relax_tech;min_confidence=0.30;max_items=20;weights_ref=weights_default;policy_profile=standard_entertainment"
+playlists/profiles,ALN_PlaylistProfile,city_event_live,"mode=event_sync;min_confidence=0.35;max_items=50;weights_ref=weights_event;policy_profile=standard_entertainment"
+
+/playlists/weights,ALN_Weights,weights_default,"w_r=0.20;w_t=0.30;w_e=0.25;w_s=0.15;w_p=0.10"
+playlists/weights,ALN_Weights,weights_event,"w_r=0.30;w_t=0.25;w_e=0.20;w_s=0.15;w_p=0.10"
+
+/session/engine,ALN_Service,session_orchestrator,"inputs=session_ctx,discovery_graph;outputs=playlist_seq,overlay_bindings"
+session/engine,ALN_Service,ranker_service,"model=seq_transformer_v1;objective=session_utility"
+session/engine,ALN_Service,policy_filter,"ruleset=youtube_youworld_2025q4"
+session/engine,ALN_Service,overlay_binder,"strategy=compatible_overlays;device_aware=true"
+
+/policies,ALN_Policy,youtube_youworld_2025q4,"enforce_harmful_acts_policy=true;enforce_gambling_updates_2025=true;age_restriction_strict=true"
+policies,ALN_Policy,privacy_min,"pseudonymous_ids=true;dp_aggregation=true;retention_days=180;no_ads_from_overlay_data=true"
+
+/math,ALN_Formula,confidence,"C = w_r*R + w_t*T + w_e*E + w_s*S + w_p*P"
+math,ALN_Formula,utility,"U = 0.5*watchtime_norm + 0.3*completion_rate + 0.2*satisfaction_score"
+
+/routing,ALN_OrchestrationContract,youtube_bridge,"capability=video_feed;provider=youtube_like;auth=oauth2_scoped"
+routing,ALN_OrchestrationContract,youworld_overlay_bus,"capability=overlay_discovery;provider=youworld_core;auth=jwt_scoped"
+routing,ALN_OrchestrationContract,smartcity_event_bus,"capability=city_events;provider=city_iot_hub;auth=mutual_tls"

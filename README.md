@@ -25,3 +25,8 @@ Local overlay server demo:
 - `cmd/overlay-server` contains an example WebSocket overlay server (used by the demo client in `web/`).
 - `internal/overlay` contains buffer logic and unit tests for ordering/latency behavior.
 - Run the demo server with `go run ./cmd/overlay-server -addr :8080` and open `http://localhost:8080` after generating the JS bundle.
+
+YouWorld dev loop
+- `./scripts/verify-youworld.sh`
+- `cd apps/city-mood-visualizer && cargo build --target wasm32-unknown-unknown`
+- `npx swagger-cli validate api/youworld-openapi.yaml # if Node toolchain is available`

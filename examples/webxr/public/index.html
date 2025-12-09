@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>YouWorld WebXR AR Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+      #youworld-ar-canvas { width: 100%; height: 100%; display: block; }
+      #controls {
+        position: fixed; top: 0; left: 0; right: 0;
+        padding: 8px; background: rgba(0,0,0,0.6); color: #fff;
+        z-index: 10; font-family: system-ui, sans-serif;
+      }
+      button { padding: 6px 12px; margin-right: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button id="start-ar">Start YouWorld AR</button>
+      <span id="status">Idle</span>
+    </div>
+    <canvas id="youworld-ar-canvas"></canvas>
+    <script type="module">
+      import { bootstrapYouWorldAR } from "../youworld-ar-scene.js";
+
+      const statusEl = document.getElementById("status");
+      const btn = document.getElementById("start-ar");
+
+      const youWorldSdk = {
+        registerScene(info) {
+          console.log("YouWorld scene registered:", info);
+          statusEl.textContent = "Scene: " + info.sceneId;
+        }
+      };
+
+      btn.addEventListener("click", async () => {
+        try {
+          statusEl.textContent = "Requesting AR session...";
+          await bootstrapYouWorldAR(youWorldSdk);
+          statusEl.textContent = "AR running";
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Error: " + (err && err.message ? err.message : String(err));
+        }
+      });
+    </script>
+  </body>
+</html>

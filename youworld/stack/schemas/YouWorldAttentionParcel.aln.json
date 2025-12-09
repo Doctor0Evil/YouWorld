@@ -1,62 +1,118 @@
 {
-  "$schema": "https://aln.network/schema/v1",
-  "kind": "YouWorld.AttentionParcel",
-  "version": "1.0.0",
-  "secure": true,
-  "nonReverseEngineerable": true,
-  "fields": {
-    "parcel_id": "string",
-    "source": "string",
-    "timestamp_ms": "int64",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://youworld.dev/schemas/YouWorldAttentionParcel.aln.json",
+  "title": "YouWorld.AttentionParcel",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parcel_id",
+    "city_block_id",
+    "source",
+    "timestamp_ms",
+    "subject_hash",
+    "session_hash",
+    "channel",
+    "engagement",
+    "client"
+  ],
+  "properties": {
+    "parcel_id": {
+      "type": "string",
+      "description": "Stable unique ID for this parcel (UUIDv4 recommended)."
+    },
+    "city_block_id": {
+      "type": "string",
+      "description": "Logical routing key for sharding parcels by city block or region."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["youtube-debug", "webxr-session", "sdk-ingest", "test-fixture"],
+      "description": "Origin of this parcel."
+    },
+    "timestamp_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix epoch in milliseconds when the event was observed."
+    },
+    "subject_hash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "description": "Non-reversible hash of user identity (e.g. SHA-256)."
+    },
+    "session_hash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "description": "Non-reversible hash of session identifier."
+    },
+    "channel": {
+      "type": "string",
+      "description": "Logical channel or stream (e.g. youtube:watch, youtube:shorts)."
+    },
+    "engagement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["watch_seconds", "playback_state", "volume_level"],
+      "properties": {
+        "watch_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "playback_state": {
+          "type": "string",
+          "enum": ["playing", "paused", "buffering", "seeking", "ended"]
+        },
+        "volume_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "is_muted": {
+          "type": "boolean",
+          "default": false
+        },
+        "quality_label": {
+          "type": "string",
+          "description": "Player quality label (e.g. 1080p60)."
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 3.0,
+          "description": "Playback rate."
+        }
+      }
+    },
     "client": {
-      "ns": "string",
-      "c": "string",
-      "cver": "string",
-      "platform": "string",
-      "os": "string",
-      "os_ver": "string",
-      "browser": "string",
-      "browser_ver": "string",
-      "gpu": "string",
-      "viewport": { "w": "int32", "h": "int32" },
-      "country": "string",
-      "lang": "string"
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "user_agent"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Client platform (web, android, ios, tv, console)."
+        },
+        "user_agent": {
+          "type": "string"
+        },
+        "ip_hash": {
+          "type": "string",
+          "description": "Non-reversible hash of IP address."
+        }
+      }
     },
-    "media": {
-      "docid": "string",
-      "debug_video_id": "string",
-      "playback_quality": "string",
-      "len_sec": "float32",
-      "current_time_sec": "float32",
-      "buffered_start_sec": "float32",
-      "buffered_end_sec": "float32",
-      "volume": "float32",
-      "muted": "bool",
-      "state": "int32",
-      "playlist_id": "string",
-      "referrer": "string",
-      "feature": "string",
-      "sourceid": "string"
+    "debug": {
+      "type": "object",
+      "description": "Optional debug payload redacted of direct identifiers.",
+      "additionalProperties": true
     },
-    "network": {
-      "last_bandwidth_bps": "float64",
-      "last_rtt_sec": "float32",
-      "user_qual": "int32",
-      "optimal_format": "string"
-    },
-    "derived": {
-      "completion_ratio": "float32",
-      "engagement_score": "float32",
-      "mood_scalar": "float32",
-      "device_lane": "string",
-      "gpu_bracket": "string",
-      "bandwidth_bracket": "string",
-      "city_block_id": "string"
-    },
-    "privacy": {
-      "user_hash": "string",
-      "session_hash": "string",
-      "anonymized": "bool"
+    "labels": {
+      "type": "object",
+      "description": "Freeform tags for routing and experiments.",
+      "additionalProperties": {
+        "type": "string"
+      }
     }
   }
 }

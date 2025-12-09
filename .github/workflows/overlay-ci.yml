@@ -31,6 +31,38 @@ jobs:
         shell: pwsh
         run: ./scripts/generate_stubs.ps1
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install ingest dependencies (npm ci)
+        working-directory: services/ingest
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Verify YouWorld schemas, OpenAPI, and TS ingest
+        run: ./scripts/verify-youworld.sh
+
+      - name: Setup Rust (for WASM) (optional)
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build city-mood-visualizer WASM (optional)
+        working-directory: apps/city-mood-visualizer
+        run: cargo build --target wasm32-unknown-unknown --release
+
       - name: Default tests (JSON)
         run: make test
 

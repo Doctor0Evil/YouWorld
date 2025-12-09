@@ -1,0 +1,28 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: synchron-egress
+  namespace: synchron
+spec:
+  hosts:
+    - api.synchron-bci.example.com
+  gateways:
+    - mesh
+    - istio-egressgateway.istio-system.svc.cluster.local
+  http:
+    - match:
+        - gateways: ["mesh"]
+          port: 80
+      route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - gateways: ["istio-egressgateway.istio-system.svc.cluster.local"]
+          port: 80
+      route:
+        - destination:
+            host: api.synchron-bci.example.com
+            port:
+              number: 443

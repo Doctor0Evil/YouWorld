@@ -1,0 +1,44 @@
+name: overlay-ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Install protoc and flatc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler flatbuffers-compiler
+
+      - name: Go env
+        run: go env
+
+      - name: Generate stubs
+        shell: pwsh
+        run: ./scripts/generate_stubs.ps1
+
+      - name: Default tests (JSON)
+        run: make test
+
+      - name: Protogen tests (protobuf)
+        run: make test-protogen
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Build overlay server image
+        run: docker build -f Dockerfile.overlay-server -t youworld/overlay-server:ci .

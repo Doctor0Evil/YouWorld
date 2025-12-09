@@ -1,0 +1,5 @@
+path,object_type,key,value
+/web/overlay,ALN_Module,name,"overlay_client"
+web/overlay,ALN_Module,assets,"overlay_bundle.js,overlay-client.js,index.html"
+web/overlay,ALN_Module,description,"Browser overlay client that connects to overlay WebSocket/WebTransport endpoints and renders OverlayEventBatch bubbles"
+web/overlay,ALN_Module,handshake,"client_hello, server_welcome, schema negotiation"

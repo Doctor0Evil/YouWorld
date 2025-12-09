@@ -1,0 +1,24 @@
+namespace youworld.playlist;
+
+enum PlaylistCommandType : byte { ADD = 1, REMOVE = 2, REORDER = 3, SEEK = 4 }
+
+table PlaylistItem {
+  item_id:string;
+  uri:string;
+  title:string;
+  duration_ms:ulong;
+  schema_version:string;
+}
+
+table PlaylistCommand {
+  playlist_id:string;
+  type:PlaylistCommandType;
+  sequence:ulong;
+  event_ts_ms:ulong;
+  schema_version:string;
+  item:PlaylistItem;
+  target_item_id:string;
+  new_index:int;
+}
+
+root_type PlaylistCommand;

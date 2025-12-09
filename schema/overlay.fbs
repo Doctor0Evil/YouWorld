@@ -1,0 +1,26 @@
+namespace youworld.overlay;
+
+enum WireVersion : byte { V1 = 1 }
+enum Codec : byte { PROTOBUF = 1, MESSAGEPACK = 2, CBOR = 3 }
+enum OverlayType : byte { TEXT = 1, REACTION = 2, CARD = 3, SYSTEM = 4 }
+enum Priority : byte { LOW = 1, NORMAL = 2, HIGH = 3, CRITICAL = 4 }
+
+table OverlayEvent {
+  stream_id:string;
+  event_id:string;
+  event_ts_ms:ulong;
+  presentation_ts_ms:ulong;
+  sequence:ulong;
+  priority:Priority;
+  overlay_type:OverlayType;
+  payload:[ubyte];
+  payload_ref:string;
+  schema_version:string;
+}
+
+table OverlayEventBatch {
+  stream_id:string;
+  events:[OverlayEvent];
+}
+
+root_type OverlayEventBatch;

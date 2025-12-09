@@ -1,0 +1,62 @@
+{
+  "$schema": "https://aln.network/schema/v1",
+  "kind": "YouWorld.AttentionParcel",
+  "version": "1.0.0",
+  "secure": true,
+  "nonReverseEngineerable": true,
+  "fields": {
+    "parcel_id": "string",
+    "source": "string",
+    "timestamp_ms": "int64",
+    "client": {
+      "ns": "string",
+      "c": "string",
+      "cver": "string",
+      "platform": "string",
+      "os": "string",
+      "os_ver": "string",
+      "browser": "string",
+      "browser_ver": "string",
+      "gpu": "string",
+      "viewport": { "w": "int32", "h": "int32" },
+      "country": "string",
+      "lang": "string"
+    },
+    "media": {
+      "docid": "string",
+      "debug_video_id": "string",
+      "playback_quality": "string",
+      "len_sec": "float32",
+      "current_time_sec": "float32",
+      "buffered_start_sec": "float32",
+      "buffered_end_sec": "float32",
+      "volume": "float32",
+      "muted": "bool",
+      "state": "int32",
+      "playlist_id": "string",
+      "referrer": "string",
+      "feature": "string",
+      "sourceid": "string"
+    },
+    "network": {
+      "last_bandwidth_bps": "float64",
+      "last_rtt_sec": "float32",
+      "user_qual": "int32",
+      "optimal_format": "string"
+    },
+    "derived": {
+      "completion_ratio": "float32",
+      "engagement_score": "float32",
+      "mood_scalar": "float32",
+      "device_lane": "string",
+      "gpu_bracket": "string",
+      "bandwidth_bracket": "string",
+      "city_block_id": "string"
+    },
+    "privacy": {
+      "user_hash": "string",
+      "session_hash": "string",
+      "anonymized": "bool"
+    }
+  }
+}

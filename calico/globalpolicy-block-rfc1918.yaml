@@ -1,0 +1,19 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-rfc1918-egress-except-kube-system
+spec:
+  order: 500
+  selector: all()
+  types:
+    - Egress
+  egress:
+    - action: Allow
+      destination:
+        namespaceSelector: "kubernetes.io/metadata.name == 'kube-system'"
+    - action: Deny
+      destination:
+        nets:
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16

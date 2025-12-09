@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package youworld.playlist;
+
+option go_package = "github.com/Doctor0Evil/YouWorld/gen/playlistpb";
+
+enum PlaylistCommandType {
+  PLAYLIST_COMMAND_TYPE_UNSPECIFIED = 0;
+  PLAYLIST_COMMAND_TYPE_ADD = 1;
+  PLAYLIST_COMMAND_TYPE_REMOVE = 2;
+  PLAYLIST_COMMAND_TYPE_REORDER = 3;
+  PLAYLIST_COMMAND_TYPE_SEEK = 4;
+}
+
+message PlaylistItem {
+  string item_id = 1;
+  string uri = 2;
+  string title = 3;
+  uint64 duration_ms = 4;
+  string schema_version = 5;
+}
+
+message PlaylistCommand {
+  string playlist_id = 1;
+  PlaylistCommandType type = 2;
+  uint64 sequence = 3;
+  uint64 event_ts_ms = 4;
+  string schema_version = 5;
+
+  PlaylistItem item = 6;
+  string target_item_id = 7;
+  int32 new_index = 8;
+}

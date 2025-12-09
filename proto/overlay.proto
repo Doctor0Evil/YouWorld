@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package youworld.overlay;
+
+option go_package = "github.com/Doctor0Evil/YouWorld/gen/overlaypb";
+
+enum WireVersion {
+  WIRE_VERSION_UNSPECIFIED = 0;
+  WIRE_VERSION_V1 = 1;
+}
+
+enum Codec {
+  CODEC_UNSPECIFIED = 0;
+  CODEC_PROTOBUF = 1;
+  CODEC_MESSAGEPACK = 2;
+  CODEC_CBOR = 3;
+}
+
+enum OverlayType {
+  OVERLAY_TYPE_UNSPECIFIED = 0;
+  OVERLAY_TYPE_TEXT = 1;
+  OVERLAY_TYPE_REACTION = 2;
+  OVERLAY_TYPE_CARD = 3;
+  OVERLAY_TYPE_SYSTEM = 4;
+}
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW = 1;
+  PRIORITY_NORMAL = 2;
+  PRIORITY_HIGH = 3;
+  PRIORITY_CRITICAL = 4;
+}
+
+message OverlayEvent {
+  string stream_id = 1;
+  string event_id = 2;
+
+  uint64 event_ts_ms = 3;
+  uint64 presentation_ts_ms = 4;
+
+  uint64 sequence = 5;
+  Priority priority = 6;
+
+  OverlayType overlay_type = 7;
+
+  bytes payload = 8;
+  string payload_ref = 9;
+
+  string schema_version = 10;
+}
+
+message OverlayEventBatch {
+  string stream_id = 1;
+  repeated OverlayEvent events = 2;
+}
+
+message ClientHello {
+  WireVersion wire_version = 1;
+  repeated Codec supported_codecs = 2;
+
+  repeated string supported_overlay_schemas = 3;
+  repeated string supported_playlist_schemas = 4;
+
+  string client_id = 5;
+  string session_id = 6;
+  string user_agent = 7;
+
+  map<string, string> features = 8;
+}
+
+message ServerWelcome {
+  WireVersion wire_version = 1;
+  Codec codec = 2;
+
+  string chosen_overlay_schema = 3;
+  string chosen_playlist_schema = 4;
+
+  uint64 server_time_ms = 5;
+
+  map<string, string> features = 6;
+}
+
+message ConfigUpdate {
+  string new_overlay_schema = 1;
+  string new_playlist_schema = 2;
+  Codec new_codec = 3;
+  uint64 effective_at_ms = 4;
+}
+
+message ConfigAck {
+  string overlay_schema = 1;
+  string playlist_schema = 2;
+  Codec codec = 3;
+  uint64 client_time_ms = 4;
+}
+
+enum ControlType {
+  CONTROL_TYPE_UNSPECIFIED = 0;
+  CONTROL_TYPE_CONFIG_UPDATE = 1;
+  CONTROL_TYPE_ERROR = 2;
+  CONTROL_TYPE_PING = 3;
+  CONTROL_TYPE_PONG = 4;
+}
+
+message ControlFrame {
+  ControlType type = 1;
+  ConfigUpdate config_update = 2;
+  string error_code = 3;
+  string error_message = 4;
+}

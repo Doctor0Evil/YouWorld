@@ -1,0 +1,126 @@
+// ALN-compatible, WASM-target Rust blueprint (no tokens, no user data).
+// Compiles to `city_mood_visualizer.wasm` and runs inside YouWorld’s stack.
+
+mod aln;
+use aln::{EventBus, Parcel, Renderer2D, Color, Easing};
+
+const MAX_MOOD: f32 = 1.0;
+const MIN_MOOD: f32 = 0.0;
+
+#[derive(Clone)]
+struct CityMoodState {
+    mood_scalar: f32,
+    completion: f32,
+    device_lane: String,
+    last_updated_ms: i64,
+}
+
+impl Default for CityMoodState {
+    fn default() -> Self {
+        Self {
+            mood_scalar: 0.3,
+            completion: 0.0,
+            device_lane: "DESKTOP_HD".to_string(),
+            last_updated_ms: 0,
+        }
+    }
+}
+
+aln::export_wasm! {
+    struct CityMoodApp {
+        state: CityMoodState,
+        renderer: Renderer2D,
+        bus: EventBus
+    }
+
+    fn init(mut app: CityMoodApp) {
+        app.state = CityMoodState::default();
+        app.bus.subscribe("YouWorld.AttentionParcel");
+        app.renderer.set_background(Color::from_rgba(4, 8, 24, 255));
+        app.renderer.enable_responsive_layout(true);
+    }
+
+    fn on_event(mut app: CityMoodApp, parcel: Parcel) {
+        if parcel.kind() != "YouWorld.AttentionParcel" {
+            return;
+        }
+
+        let completion = parcel.f32("derived.completion_ratio").unwrap_or(0.0);
+        let engagement = parcel.f32("derived.engagement_score").unwrap_or(0.0);
+        let loudness = parcel
+            .f32("media.relative_loudness")
+            .unwrap_or(0.0)
+            .max(0.0)
+            .min(10.0) / 10.0;
+
+        let network_ok = parcel
+            .f64("network.last_bandwidth_bps")
+            .unwrap_or(0.0) > 5_000_000.0;
+
+        let base_mood = (completion * 0.5 + engagement * 0.3 + loudness * 0.2)
+            .max(MIN_MOOD)
+            .min(MAX_MOOD);
+
+        let adjusted_mood = if network_ok {
+            (base_mood + 0.1).min(MAX_MOOD)
+        } else {
+            (base_mood - 0.1).max(MIN_MOOD)
+        };
+
+        app.state.mood_scalar = Easing::smoothstep(app.state.mood_scalar, adjusted_mood, 0.12);
+        app.state.completion = completion;
+        app.state.device_lane = parcel
+            .str("derived.device_lane")
+            .unwrap_or("UNKNOWN")
+            .to_string();
+        app.state.last_updated_ms = parcel.i64("timestamp_ms").unwrap_or(0);
+    }
+
+    fn frame(mut app: CityMoodApp, dt_ms: i32) {
+        let mood = app.state.mood_scalar;
+        let completion = app.state.completion;
+
+        let city_intensity = (mood * 0.8 + completion * 0.2).min(1.0);
+        let base_color = Color::from_rgba(
+            (10.0 + 70.0 * city_intensity) as u8,
+            (20.0 + 160.0 * city_intensity) as u8,
+            (60.0 + 120.0 * city_intensity) as u8,
+            255
+        );
+
+        app.renderer.clear(base_color);
+
+        let blocks = 64;
+        for i in 0..blocks {
+            let n = i as f32 / blocks as f32;
+            let height_factor = (mood * 0.6 + n * completion * 0.4).min(1.0);
+            let pulse = ((app.state.last_updated_ms as f32 / 1000.0) + n * 3.1415).sin().abs();
+            let effective_height = (height_factor * 0.7 + pulse * 0.3).min(1.0);
+
+            let lane_tint = match app.state.device_lane.as_str() {
+                "DESKTOP_HD" => Color::from_rgba(40, 200, 255, 180),
+                "MOBILE_SD" => Color::from_rgba(255, 190, 40, 180),
+                _ => Color::from_rgba(180, 180, 220, 160),
+            };
+
+            app.renderer.draw_rect_normalized(
+                n,
+                1.0 - effective_height,
+                1.0 / blocks as f32 * 0.9,
+                effective_height,
+                lane_tint.blend_with(base_color, 0.65)
+            );
+        }
+
+        app.renderer.draw_text_top_left(
+            format!(
+                "YouWorld City Mood\nMood: {:.2}\nCompletion: {:.1}%\nLane: {}",
+                mood,
+                completion * 100.0,
+                app.state.device_lane
+            ),
+            Color::from_rgba(220, 240, 255, 255),
+            14
+        );
+    }
+}

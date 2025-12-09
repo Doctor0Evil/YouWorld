@@ -23,8 +23,13 @@
     <canvas id="youworld-ar-canvas"></canvas>
     <script type="module">
       import { bootstrapYouWorldAR } from "../youworld-ar-scene.js";
+      import { applyParcelToCityMoodAndScene } from "../bridges/youworld-city-mood-bridge.js";
 
       const statusEl = document.getElementById("status");
+      const moodEl = document.createElement('span');
+      moodEl.id = 'mood';
+      moodEl.style.marginLeft = '12px';
+      statusEl.parentElement.appendChild(moodEl);
       const btn = document.getElementById("start-ar");
 
       const youWorldSdk = {
@@ -37,8 +42,32 @@
       btn.addEventListener("click", async () => {
         try {
           statusEl.textContent = "Requesting AR session...";
-          await bootstrapYouWorldAR(youWorldSdk);
+          const { scene, cityMoodApp } = await bootstrapYouWorldAR(youWorldSdk);
           statusEl.textContent = "AR running";
+          // Update mood score UI from the WASM app every second
+          setInterval(() => {
+            try {
+              const mood = typeof cityMoodApp.mood_score === 'function' ? cityMoodApp.mood_score() : 0.5;
+              moodEl.textContent = 'Mood: ' + mood.toFixed(2);
+            } catch (err) {
+              // noop if not available
+            }
+          }, 1000);
+          // Wire a simple UI to send sample parcels
+          const testBtn = document.createElement('button');
+          testBtn.textContent = 'Apply Random Parcel';
+          testBtn.addEventListener('click', () => {
+            const p = {
+              labels: {
+                completion_ratio: (Math.random()).toFixed(3),
+                engagement_score: (0.2 + Math.random() * 0.8).toFixed(3),
+                ar_complexity_budget: Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.5 ? 'MEDIUM' : 'LOW',
+                qoe_score: (0.5 + Math.random() * 0.5).toFixed(3)
+              }
+            };
+            applyParcelToCityMoodAndScene(cityMoodApp, p, scene);
+          });
+          document.getElementById('controls').appendChild(testBtn);
         } catch (err) {
           console.error(err);
           statusEl.textContent = "Error: " + (err && err.message ? err.message : String(err));

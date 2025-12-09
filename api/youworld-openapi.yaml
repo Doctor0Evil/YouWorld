@@ -1,0 +1,69 @@
+openapi: 3.0.0
+info:
+  title: YouWorld REST API
+  version: 1.0.0
+paths:
+  /v1/scenes:
+    post:
+      summary: Register or update a scene
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sceneId, mode]
+              properties:
+                sceneId: { type: string }
+                mode: { type: string, enum: [AR, VR, FLAT] }
+                engine: { type: string }
+                meta: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Scene registered
+  /v1/scenes/{sceneId}:
+    get:
+      parameters:
+        - in: path
+          name: sceneId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Scene config
+  /v1/widgets:
+    get:
+      parameters:
+        - in: query
+          name: sceneId
+          schema: { type: string }
+      responses:
+        "200":
+          description: List widgets for scene
+  /v1/widgets/{widgetId}:
+    get:
+      parameters:
+        - in: path
+          name: widgetId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Widget config and WASM URL
+  /v1/events:
+    post:
+      summary: Submit client telemetry or interaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sceneId: { type: string }
+                widgetId: { type: string }
+                type: { type: string }
+                data: { type: object }
+      responses:
+        "202":
+          description: Event accepted

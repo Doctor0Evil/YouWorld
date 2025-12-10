@@ -1,0 +1,34 @@
+file: html5_chrome_remote_debugging_trace
+version: 1.0.0
+scenario: "Debugging an HTML5 game (including Newgrounds/itch.io builds) using Chrome remote debugging, with traces streamed into YouWorld."
+setup:
+  start_chrome:
+    - "Close all normal browser instances."
+    - "Launch Chrome with:
+         * --remote-debugging-port=9222
+         * --user-data-dir=/path/to/temporary-profile"
+    - "Navigate to local or portal-hosted HTML5 game."
+  connect_cdp_client:
+    - "Query http://localhost:9222/json/list to locate the target page."
+    - "Connect to its WebSocket debugger URL."
+    - "Enable Page, Network, Console, Runtime domains."
+trace_collection:
+  network:
+    - "Record all asset loads: HTML, JS, JSON, WASM, textures, audio."
+    - "Persist request/response pairs as DebugTrace[type=network]."
+  console_and_errors:
+    - "Capture console messages and uncaught exceptions."
+    - "Tag critical runtime errors that correlate with gameplay anomalies."
+  canvas_state_sampling:
+    - "If permitted by game code, inject sampler that reads high-level game state each frame (positions, counts)."
+integration_with_youworld:
+  ingestion:
+    - "Forward all trace events to /services/ingest/devtools-relay."
+    - "Associate them with a stable worldId and sessionId."
+  retrieval:
+    - "Query /api/world-debug/{worldId} with appropriate filters to power dashboards or ALN-based visualizations."
+usage_notes:
+  - "Works without installing extra local dependencies beyond the browser and a small client or extension."
+  - "Designed to be language-agnostic on the collector side; recommended to implement clients in Go or Rust for performance."
+status:
+  applicability: "Ready for use as a repeatable debugging playbook for Arrow Survival and other HTML5/WebXR experiences."

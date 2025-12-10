@@ -1,0 +1,144 @@
+file: youworld_universal_debug_support
+version: 1.0.0
+goal: "Turn YouWorld into a universal cross-browser debug companion for any page, video, or HTML5/WebXR game."
+architecture:
+  overview:
+    - "Use browser extensions or external CDP clients as capture front-ends."
+    - "Stream DevTools-equivalent telemetry to YouWorld /services/ingest over WebSocket or HTTP."
+    - "Normalize all events into a DebugTrace schema under /schemas."
+    - "Expose traces via /api/world-debug/{worldId} for 3D and dashboard-style apps."
+browser_capture_layer:
+  content_script:
+    responsibilities:
+      - "Identify the active tab and main execution surfaces (DOM, iframes, primary canvas/WebGL context)."
+      - "Inject a small bridge script to mirror:
+           * console.log/info/warn/error
+           * window.onerror
+           * 'error' events on window."
+      - "Forward messages to the extension background service via postMessage or custom DOM events."
+    data_minimization:
+      - "Redact cookies, auth headers, and user-identifying tokens."
+      - "Hash or truncate URLs where privacy policies require it."
+  devtools_panel:
+    description: "Optional panel to visualize what is being streamed to YouWorld in real time."
+    capabilities:
+      - "Start/stop streaming for the active tab."
+      - "Tag sessions with worldId and labels (e.g., 'ArrowSurvival15s-Newgrounds')."
+      - "Display current bandwidth and event counts."
+  cdn_and_origin_awareness:
+    - "Track origin for each request (portal shell vs iframe vs CDN)."
+    - "Preserve frame tree structure so worldContext can differentiate layers."
+devtools_protocol_bridge:
+  supported_browsers:
+    - "Chrome / Chromium via CDP."
+    - "Other browsers via CDP-like adapters or WebExtensions Debugging APIs where available."
+  domains_subscribed:
+    - "Page"
+    - "Network"
+    - "Console"
+    - "Runtime"
+    - "PerformanceTimeline (where available)"
+  connection_flow:
+    - "Client discovers available targets via GET /json/list on the debugger endpoint."
+    - "Client selects target tab and opens WebSocket session."
+    - "Client issues:
+         * Network.enable
+         * Console.enable
+         * Runtime.enable
+         * Page.enable
+       and listens for incremental events."
+  event_forwarding:
+    - "Each CDP event is wrapped into a DebugTrace envelope and sent to /services/ingest/devtools-relay."
+debug_trace_schema:
+  location: "/schemas/DebugTrace"
+  base_fields:
+    - "traceId: globally unique event identifier."
+    - "worldId: logical world instance (e.g., specific Newgrounds game session)."
+    - "sessionId: browser session / recording run identifier."
+    - "timestamp: ISO-8601 with high-resolution clock where supported."
+    - "source: enum [browser-cdp, browser-extension, server-proxy]."
+    - "type: enum [network, console, runtime-error, page, performance, canvas-probe]."
+    - "frameId: browser frame identifier or synthetic ID."
+    - "worldContext: human-readable frame label (e.g., 'newgrounds-portal', 'html5-game-iframe')."
+    - "payload: type-specific object containing event details."
+  type_payloads:
+    network:
+      - "url, method, status, statusText"
+      - "requestHeaders (sanitized), responseHeaders (sanitized)"
+      - "initiator, resourceType, timing data"
+    console:
+      - "level, text, args, stackTrace summary"
+    runtime_error:
+      - "message, filename, line, column, errorType, stackTrace"
+    performance:
+      - "metricType (frame, longTask, layoutShift, custom)"
+      - "duration, startTime, details"
+    canvas_probe:
+      - "tag (e.g., 'collision', 'entity-state', 'frame-snapshot')"
+      - "data (structured JSON defined by game-side instrumentation)"
+ingest_services:
+  devtools_relay:
+    path: "/services/ingest/devtools-relay"
+    input:
+      - "Streamed JSON batches containing DebugTrace entries."
+    behavior:
+      - "Validate schema and drop non-compliant or unsafe fields."
+      - "Attach server-side receive timestamps and source metadata."
+      - "Persist to time-series or document storage optimized for worldId+sessionId+timestamp queries."
+  page_structure:
+    path: "/services/ingest/page-structure"
+    capture:
+      - "document.documentElement.outerHTML snapshot (optional, sanitized)."
+      - "List of <script> tags with src, inline size, and integrity attributes."
+      - "Iframe tree with src, name, origin, and approximate bounding boxes."
+    purpose:
+      - "Allow YouWorld apps to render script graphs and DOM maps per world."
+  canvas_probe:
+    path: "/services/ingest/canvas-probe"
+    expected_clients:
+      - "Injected script in debug builds of HTML5/WebGL/WebXR applications."
+    usage:
+      - "Receive structured collision and game-state events for correlation with network and performance traces."
+world_debug_api:
+  endpoint: "/api/world-debug/{worldId}"
+  query_parameters:
+    - "type: network | console | runtime-error | performance | canvas-probe"
+    - "frame: frameId or worldContext filter."
+    - "host: filter by request host for network events."
+    - "status: HTTP status filter for network events."
+    - "level: console log level filter."
+    - "since / until: time range."
+  responses:
+    - "Paged lists of DebugTrace objects or aggregated summaries (counts, histograms) depending on query."
+  example_uses:
+    - "Filter all network requests for a given Newgrounds portal iframe."
+    - "Show only runtime errors occurring inside the HTML5 game iframe."
+    - "Extract all canvas-probe collisions tagged 'arrow' for Arrow Survival sessions."
+apps_and_visualizations:
+  debug_worlds:
+    description: "3D or 2D worlds in YouWorld that visualize trace flows."
+    examples:
+      - "Network-stream world: each request as an entity with edges to initiators and response latencies encoded as color/size."
+      - "Error-landscape world: spikes of runtime errors or console logs represented as terrain features."
+  existing_apps_integration:
+    city_mood_visualizer:
+      - "Extend mood inputs to include 'telemetry health' for selected sites or games (error density, latency spikes)."
+  external_tooling:
+    - "Allow export as HAR, JSON lines, or ALN-compatible archives for offline analysis."
+security_and_privacy:
+  principles:
+    - "Opt-in only: users explicitly enable streaming per tab/session."
+    - "No capture of credentials, cookies, or form contents."
+    - "Configurable redaction rules per deployment."
+  logging:
+    - "Audit trails for who accessed which worldId and which subsets of traces."
+    - "Configurable retention windows with safe deletion procedures."
+implementation_notes:
+  languages_and_env:
+    - "Use Go or Rust for ingest and API services to maximize performance and portability."
+    - "Avoid Python in this stack by design."
+  deployment:
+    - "Design services to run without requiring local admin rights or local dependency installation on end-user machines."
+    - "Package browser extension as a standard WebExtension compatible with Chromium/Firefox where possible."
+status:
+  phase: "Design blueprint ready for implementation in YouWorld repositories."

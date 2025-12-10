@@ -1,0 +1,50 @@
+file: youworld_browser_trace_instrumentation
+version: 1.0.0
+goal: "Describe concrete steps to instrument browsers via remote debugging and extensions so YouWorld can collect trace data from HTML5/WebXR apps."
+chrome_remote_debugging:
+  prerequisites:
+    - "Chromium-based browser installed (Chrome, Edge, etc.)."
+    - "Ability to start the browser with command-line flags (no admin required)."
+  startup_flags:
+    - "--remote-debugging-port=9222"
+    - "--user-data-dir=/path/to/separate/profile"
+  workflow:
+    - "Launch browser with flags."
+    - "Open target URL, e.g., Newgrounds portal hosting Arrow Survival demo."
+    - "Discover available targets by querying http://localhost:9222/json/list."
+    - "Select the tab running the game; read its WebSocket debugger URL."
+    - "Open CDP WebSocket and subscribe to Page, Network, Console, and Runtime domains."
+network_capture_with_cdp:
+  steps:
+    - "Send Network.enable to start recording network events."
+    - "Listen for Network.requestWillBeSent and Network.responseReceived."
+    - "Aggregate requestId-based events into complete request/response records."
+    - "Store records into DebugTrace[type=network] with sanitized headers and timing."
+  outputs:
+    - "Per-resource load timings, HTTP status codes, and content types."
+    - "Origin mapping (portal shell vs game iframe vs CDN)."
+canvas_and_collision_hooks:
+  approach:
+    - "Recognize that collision maps are not a browser primitive; they are implemented in app code."
+    - "Inject helper script via extension or local debug build that:
+         * Hooks requestAnimationFrame.
+         * Wraps known collision/hit-test functions when accessible.
+         * Logs collision events, entity bounds, and positions to console or a custom channel."
+  export_to_youworld:
+    - "Tag logs with a 'canvas-probe' marker."
+    - "Let the extension or CDP client capture these logs and forward them to /services/ingest/canvas-probe."
+console_and_error_capture:
+  via_cdp:
+    - "Enable Console and Runtime domains."
+    - "Listen for consoleAPICalled and exceptionThrown events."
+    - "Convert them to DebugTrace[type=console/runtime-error] with preserved message and stackTrace metadata."
+  via_extension:
+    - "Register window.onerror and window.addEventListener('error', handler)."
+    - "Forward error details from content script to background, then to YouWorld."
+request_export_and_replay:
+  devtools_ui:
+    - "Use Network panel to copy requests as cURL/fetch or export HAR as needed."
+  automation:
+    - "Optionally have YouWorld provide templates to reconstruct important request sequences (for reproducible test scenarios)."
+status:
+  readiness: "Actionable instrumentation pattern for non-admin, local browser debugging integrations feeding YouWorld trace services."

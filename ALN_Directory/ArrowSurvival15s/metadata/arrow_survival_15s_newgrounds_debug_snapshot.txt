@@ -1,0 +1,161 @@
+file: arrow_survival_15s_newgrounds_debug_snapshot
+version: 1.0.0
+source:
+  newgrounds_portal_url: "https://www.newgrounds.com/portal/view/994434"
+  newgrounds_demo_url_alt: "https://www.newgrounds.com/portal/view/1004682"
+  itch_demo_url: "https://lowpixelbyte.itch.io/demo-arrow-survival-15-seconds"
+  dev_announcement_url: "https://lowpixelbyte.newgrounds.com/news/post/1569576"
+  teaser_video_url: "https://www.youtube.com/watch?v=TuentmWvmvk"
+  reference_index_urls:
+    - "https://gamefaqs.gamespot.com/pc/578902-arrow-survival-15-seconds/data"
+    - "https://itch.io/games/tag-arrow/tag-pixel-art"
+metadata:
+  title: "Arrow Survival: 15 Seconds"
+  variant: "Web/HTML5 demo (Newgrounds iframe build)"
+  author: "Low Pixel Byte"
+  genre: ["Platformer", "Action", "Arcade"]
+  tags: ["2D", "Pixel Art", "Arrow", "Bow", "HTML5", "GDevelop"]
+  engine:
+    name: "GDevelop"
+    export_target: "HTML5 (Web)"
+  core_concept:
+    loop: "Survive 15 seconds per level by dodging hazards and managing your own ricocheting arrows."
+    key_mechanic: "Magic arrow projectiles with deliberately chaotic ricochet paths that can create temporary safe or dead zones."
+  platform_context:
+    primary_portal: "Newgrounds HTML5 iframe"
+    mirrored_builds:
+      - "Itch.io Web/HTML5 demo"
+      - "Legacy PC listing on third‑party databases"
+design_observations:
+  projectile_system:
+    type: "Magic arrow, non-realistic physics"
+    behavior:
+      - "Arrows glow and behave as non-physical projectiles, justifying non-classical bounces."
+      - "Ricochet angles are intentionally non-deterministic in some edge cases to prevent trivial safe-spot exploitation."
+      - "Arrows may enter long-lived bounce loops when trapped in geometry gaps, reducing threat in local zones."
+    inferred_risks:
+      - "Edge-corner ricochets can feel 'random' but are aligned with the intended challenge profile."
+      - "Tilemap or collider seams can generate situations where projectile threat is effectively removed from the player’s reachable area."
+  level_geometry:
+    structure:
+      - "Tile/texture-based platforms with potential micro-gaps between tiles or collider bounds."
+      - "Platforms and walls form arrow bounce corridors and traps that can be exploited by skilled players."
+    known_issues_like:
+      - "Arrows getting stuck in micro-gaps and bouncing indefinitely out-of-threat."
+      - "Visual-collider desync creating deceptive 'safe' or 'dead' spaces."
+debug_visibility_limits:
+  public_artifacts:
+    - "Gameplay teaser video (Web/HTML5 demo)."
+    - "Itch.io store metadata: engine, platform, genre, tags, and marketing description."
+    - "Newgrounds portal page: iframe-embedded HTML5 game, comments, and thumbnails."
+    - "Announcement / dev post with basic description and links."
+  not_exposed_publicly:
+    - "Internal debug logs or trace overlays from the Newgrounds build."
+    - "Collision maps, hitbox visualizers, or physics-debug layers."
+    - "Source code, symbol files, or engine-level profiling hooks."
+    - "Developer console, debug commands, or API endpoints dedicated to debugging."
+  compliance_notes:
+    - "Any deep debug must be performed locally via browser DevTools, respecting portal TOS and copyright."
+    - "No decompilation or unauthorized scraping of proprietary game logic is assumed in this snapshot."
+local_debug_strategy:
+  requirement: "Treat browser DevTools + YouWorld as the primary inspection surface; do not rely on Newgrounds for debug APIs."
+  steps:
+    - "Load the Newgrounds portal item hosting the HTML5 demo in a Chromium-based browser."
+    - "Open DevTools, focus on Network, Console, and Performance/Timeline panels while the iframe game runs."
+    - "Identify the iframe that hosts the game (origin likely from a Newgrounds or external CDN domain)."
+    - "Capture:
+         * All game asset requests (HTML, JS, JSON, WASM, images, audio).
+         * Console logs, warnings, errors, and uncaught exceptions.
+         * Frame-rate and main-thread blocking events around heavy arrow activity."
+    - "Optionally host a local copy of the HTML5 build (if provided by dev) to enable more intrusive instrumentation."
+analysis_targets:
+  1:
+    name: "Arrow ricochet predictability"
+    goal: "Characterize how often ricochet angles deviate from classical reflection rules at tile corners."
+    method:
+      - "Record video plus DevTools performance timeline during repeated shots into walls and corners."
+      - "Log approximate entry and exit angles (via visual frame stepping) for series of bounces."
+      - "Cluster events into 'expected square bounce' vs 'chaotic redirect' to quantify intended chaos."
+  2:
+    name: "Safe-spot and dead-zone formation"
+    goal: "Detect when arrows become harmless because they are trapped away from the player’s reachable area."
+    method:
+      - "Identify cases where an arrow is confined to a loop that does not intersect the player’s reachable space."
+      - "Tag time intervals where no projectile intersects the player’s potential path despite being active."
+      - "Use these findings as inputs for level-design feedback or ALN-based auto-tuning (if working with the dev)."
+  3:
+    name: "Geometry gaps and collider seams"
+    goal: "Locate platform boundaries that consistently trap arrows or cause visual/physics mismatches."
+    method:
+      - "Observe repeated arrow entrapment at specific pixel coordinates or tiles."
+      - "Correlate visible texture seams with suspected collider edges."
+      - "If working with a local build, overlay a simple collider-visualization layer in-engine to confirm."
+youworld_integration_hooks:
+  debug_role: "Use YouWorld as a trace hub and visualization layer for browser/game telemetry."
+  ingestion:
+    devtools_bridge:
+      description: "Browser extension or external CDP client that forwards DevTools events into YouWorld."
+      channels:
+        - "Network: resource loads for Newgrounds portal and game iframe."
+        - "Console: logs, warnings, errors from game JavaScript."
+        - "Runtime: uncaught exceptions, stack traces, and custom debug messages."
+        - "Page/DOM: iframe structure, main canvas identification."
+      tagging:
+        - "worldId: stable identifier representing the Arrow Survival Newgrounds world instance."
+        - "frameContext: 'newgrounds-portal-shell', 'game-iframe', 'third-party-ad-or-analytics'."
+  schema_binding:
+    debug_trace_schema_ref: "/schemas/DebugTrace"
+    mapped_fields:
+      - "source: browser, cdp, extension-content-script"
+      - "type: network | console | runtime-error | performance | canvas-probe"
+      - "url: full request URI for network-type events."
+      - "frameId: identifier for source frame (portal shell vs game iframe)."
+      - "worldContext: high-level label like 'Newgrounds iframe' or 'ArrowSurvival15s-canvas'."
+      - "stackTrace: symbolized where possible for runtime/console events."
+      - "timing: timestamps and durations normalized to world clock."
+  api_endpoints:
+    world_debug:
+      base: "/api/world-debug/{worldId}"
+      filters:
+        examples:
+          - "?type=network&host=newgrounds.com&frame=portal-iframe"
+          - "?type=console&level=error"
+          - "?type=canvas-probe&tag=collision"
+      usage:
+        - "Drive ALN-based visual dashboards that show spike zones for errors or long frame times."
+        - "Feed a 'debug-world' where each request, error, or collision trace is rendered as a spatial node."
+    ingest_services:
+      devtools_relay: "/services/ingest/devtools-relay"
+      page_structure: "/services/ingest/page-structure"
+      canvas_probe: "/services/ingest/canvas-probe"
+canvas_and_collision_inference:
+  limitations:
+    - "Browsers do not expose engine-level collision maps directly."
+    - "Collision must be inferred from game-level instrumentation or visual analysis."
+  non-invasive_techniques:
+    - "Hook requestAnimationFrame in an injected script to periodically sample game-visible state, if accessible."
+    - "Register window.onerror and 'error' event listeners to capture unhandled exceptions and resource failures."
+    - "Mirror console.log / console.error calls that the dev may already use for ad-hoc collision or state debugging."
+  cooperative_instrumentation_path:
+    requires_dev_support: true
+    actions:
+      - "Add a lightweight debug flag in the game JS (e.g., ?debug=1) that enables:
+           * Logging of collision events (entities, positions, bounds).
+           * Reporting of arrow spawn/despawn events and bounce counts.
+           * Periodic dumps of player position and active hazard count."
+      - "Route these debug logs to console or a custom window.debugChannel object."
+      - "Let YouWorld’s devtools-relay subscribe and ingest them into the DebugTrace schema."
+security_and_ethics:
+  scope:
+    - "Only use publicly visible builds and browser APIs."
+    - "Avoid reverse engineering beyond standard DevTools inspection used by web developers."
+    - "Respect copyright and intellectual property; treat all traces as observational data for debugging."
+  recommended_workflow:
+    - "If deeper engine-level insight is needed, request a dedicated debug build or documentation from Low Pixel Byte."
+    - "Document all instrumentation steps clearly in ALN so they remain auditable and repeatable."
+status:
+  snapshot_intent: "Serve as a non-invasive, legally-safe debug-info baseline for Arrow Survival: 15 Seconds (Newgrounds demo) within YouWorld/ALN workflows."
+  next_steps:
+    - "Implement YouWorld browser devtools-relay client."
+    - "Create a dedicated worldId for the Arrow Survival Newgrounds demo."
+    - "Record at least 2–3 sessions focused on ricochet behavior, safe spots, and geometry gaps for later ALN analysis."
